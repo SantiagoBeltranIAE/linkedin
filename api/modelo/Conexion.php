@@ -13,3 +13,4 @@ function connection() {
         echo $e->getMessage();
     }
 }
+?>

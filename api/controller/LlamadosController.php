@@ -1,5 +1,4 @@
 <?php
-// controller/LlamadosController.php
 require_once '../modelo/LlamadosModel.php';
 
 class LlamadosController {
@@ -9,3 +8,4 @@ class LlamadosController {
         return json_encode(['llamados' => $llamados]);
     }
 }
+?>

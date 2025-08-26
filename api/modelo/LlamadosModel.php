@@ -8,7 +8,7 @@ class LlamadosModel {
         $this->conn = connection();
     }
     public function traerLlamados() {
-        $sql = "SELECT * FROM llamados";
+        $sql = "SELECT * FROM vista_llamados_empresas";
         $result = $this->conn->query($sql);
         $llamados = [];
         while ($row = $result->fetch_assoc()) {
@@ -17,3 +17,4 @@ class LlamadosModel {
         return $llamados;
     }
 }
+?>

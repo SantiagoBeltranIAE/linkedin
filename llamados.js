@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 })()}
                             </span>
                         </div>
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors postular-btn" data-llamado-id="${llamado.id}">
                             Postular
                         </button>
                     </div>
@@ -68,4 +68,23 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error al cargar los llamados:', error);
         });
+});
+
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('postular-btn')) {
+        const llamadoId = e.target.dataset.llamadoId;
+
+        const response = await fetch('./api/routes/api.php?action=postular', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ llamado_id: llamadoId }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            alert('Postulación exitosa');
+        } else {
+            alert(data.message || 'Error al postularse');
+        }
+    }
 });
