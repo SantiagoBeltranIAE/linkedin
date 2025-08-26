@@ -1,7 +1,10 @@
 <?php
+require_once '../modelo/Conexion.php';
 require_once '../controller/LlamadosController.php';
 require_once '../controller/login.php';
 require_once '../controller/register.php';
+
+$conn = connection(); // Establecer la conexión a la base de datos
 
 header('Content-Type: application/json');
 
@@ -34,30 +37,31 @@ switch ($action) {
         break;
 
     case 'postular':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            session_start();
-            if (!isset($_SESSION['user'])) {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Debes iniciar sesión para postularte']);
-                exit();
-            }
+        session_start();
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Debes iniciar sesión para postularte']);
+            exit();
+        }
 
-            $data = json_decode(file_get_contents('php://input'), true);
-            $usuarioId = $_SESSION['user']['id'];
-            $llamadoId = $data['llamado_id'] ?? null;
+        $data = json_decode(file_get_contents('php://input'), true);
+        $usuarioId = $_SESSION['user']['id'];
+        $llamadoId = $data['llamado_id'] ?? null;
 
-            $stmt = $conn->prepare("INSERT INTO postulaciones (usuario_id, llamado_id, fecha_postulacion) VALUES (?, ?, NOW())");
-            $stmt->bind_param("ii", $usuarioId, $llamadoId);
+        if (!$llamadoId) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID de llamado no proporcionado']);
+            exit();
+        }
 
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Postulación registrada']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Error al registrar la postulación']);
-            }
+        $stmt = $conn->prepare("INSERT INTO postulaciones (usuario_id, llamado_id, fecha_postulacion) VALUES (?, ?, NOW())");
+        $stmt->bind_param("ii", $usuarioId, $llamadoId);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Postulación registrada con éxito']);
         } else {
-            http_response_code(405);
-            echo json_encode(['error' => 'Método no permitido']);
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error al registrar la postulación']);
         }
         break;
 
@@ -69,29 +73,34 @@ switch ($action) {
             exit();
         }
 
-        $usuarioId = $_SESSION['user']['id'];
-        $sql = "SELECT p.id, l.titulo, l.descripcion, p.fecha_postulacion 
-                FROM postulaciones p
-                INNER JOIN llamados l ON p.llamado_id = l.id
-                WHERE p.usuario_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $usuarioId);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        try {
+            $usuarioId = $_SESSION['user']['id'];
+            $sql = "SELECT l.id, l.titulo, l.descripcion, p.fecha_postulacion 
+                    FROM postulaciones p
+                    INNER JOIN llamados l ON p.llamado_id = l.id
+                    WHERE p.usuario_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $usuarioId);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        $postulaciones = [];
-        while ($row = $result->fetch_assoc()) {
-            $postulaciones[] = $row;
+            $postulaciones = [];
+            while ($row = $result->fetch_assoc()) {
+                $postulaciones[] = $row;
+            }
+
+            echo json_encode(['success' => true, 'postulaciones' => $postulaciones]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error interno del servidor', 'error' => $e->getMessage()]);
         }
-
-        echo json_encode(['success' => true, 'postulaciones' => $postulaciones]);
         break;
 
     case 'logout':
         session_start();
         session_destroy();
-        header('Location: ../../index.html'); // Redirigir al usuario a la página principal
-        exit();
+        echo json_encode(['success' => true, 'message' => 'Sesión cerrada']);
+        break;
 
     default:
         http_response_code(404);

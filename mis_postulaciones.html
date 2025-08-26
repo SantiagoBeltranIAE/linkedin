@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Postulaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Botón para volver atrás -->
+        <button onclick="window.location.href='index.php'" class="mb-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            ← Volver
+        </button>
+
+        <h1 class="text-2xl font-bold mb-4">Mis Postulaciones</h1>
+        <div id="postulaciones-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('./api/routes/api.php?action=getPostulaciones');
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('Debes iniciar sesión para ver tus postulaciones');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    throw new Error('Error al cargar las postulaciones');
+                }
+
+                const data = await response.json();
+                const container = document.getElementById('postulaciones-container');
+                container.innerHTML = '';
+
+                if (data.success && data.postulaciones.length > 0) {
+                    data.postulaciones.forEach(postulacion => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-4 rounded-lg shadow-md';
+                        card.innerHTML = `
+                            <h2 class="text-lg font-bold">${postulacion.titulo}</h2>
+                            <p class="text-gray-600">${postulacion.descripcion}</p>
+                            <p class="text-sm text-gray-500">Postulado el: ${postulacion.fecha_postulacion}</p>
+                        `;
+                        container.appendChild(card);
+                    });
+                } else {
+                    container.innerHTML = '<p class="text-gray-600">No tienes postulaciones registradas.</p>';
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al cargar las postulaciones');
+            }
+        });
+    </script>
+</body>
+</html>
